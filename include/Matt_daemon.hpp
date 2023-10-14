@@ -1,18 +1,30 @@
 #pragma once
 
-#define LOCK_FILE "/var/lock/matt_daemon.lock"
+#define LOCK_FILE "./log/matt_daemon.lock"
 
 class Matt_daemon
 {
 private:
+	int	lockFileDescriptor;
+
+	Matt_daemon();
+
+	bool	Lock_file(); 
+	void	Unlock_file();
+	void	Delete_lock_file();
 
 public:
-	Matt_daemon() = delete;
 	Matt_daemon(Matt_daemon const &copy) = delete;
 	Matt_daemon &operator=(Matt_daemon const &copy) = delete;
-
-	Matt_daemon(int argc, char **argv);
 	~Matt_daemon();
 
-	static bool Check_lock(); 
+	static Matt_daemon& getInstance()
+	{
+		static Matt_daemon instance;
+		return instance;
+	}
+
+	void Loop();
+
+	void clear_all();
 };
