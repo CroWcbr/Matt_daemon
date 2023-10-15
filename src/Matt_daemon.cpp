@@ -1,6 +1,6 @@
 #include "../include/Tintin_reporter.hpp"
 #include "../include/Matt_daemon.hpp"
-#include "../include/Server.hpp"
+
 
 #include <unistd.h>
 #include <signal.h>
@@ -9,12 +9,11 @@
 
 void signal_handler(int signum)
 {
-	Tintin_reporter::log(Tintin_reporter::DEBUG, "sigterm_handler");
+	Tintin_reporter::log(Tintin_reporter::DEBUG, "signal_handler(int signum)");
 
+	(void) signum;
 	// Matt_daemon&  deamon = Matt_daemon::getInstance();
-
 	// deamon.clear_all();
-	// Tintin_reporter::log(Tintin_reporter::DEBUG, "sigterm_handler22");
 	exit(0);
 }
 
@@ -29,6 +28,7 @@ void archiveTask()
 
 Matt_daemon::Matt_daemon()
 {
+	Tintin_reporter::log(Tintin_reporter::DEBUG, "Matt_daemon::Matt_daemon()");
 	if (!Tintin_reporter::createLogDirectory())
 		exit(1);
 	Tintin_reporter::log(Tintin_reporter::INFO, "Started.");
@@ -72,19 +72,20 @@ Matt_daemon::Matt_daemon()
 
 Matt_daemon::~Matt_daemon()
 {
-	clear_all();
+	Clear_all();
 	Tintin_reporter::log(Tintin_reporter::DEBUG, "Matt_daemon::~Matt_daemon()");
 }
 
-void Matt_daemon::clear_all()
+void Matt_daemon::Clear_all()
 {
-	Tintin_reporter::log(Tintin_reporter::DEBUG, "Matt_daemon::clear_all()");
+	Tintin_reporter::log(Tintin_reporter::DEBUG, "Matt_daemon::Clear_all()");
 	Unlock_file();
 	Delete_lock_file();
 }
 
 void	Matt_daemon::Delete_lock_file()
 {
+	Tintin_reporter::log(Tintin_reporter::DEBUG, "Matt_daemon::Delete_lock_file()");
 	if (unlink(LOCK_FILE) != 0)
 		Tintin_reporter::log(Tintin_reporter::ERROR, "Error deleting lock file.");
 	else
@@ -93,7 +94,7 @@ void	Matt_daemon::Delete_lock_file()
 
 void	Matt_daemon::Unlock_file()
 {
-	Tintin_reporter::log(Tintin_reporter::DEBUG, "Unlock_file.");
+	Tintin_reporter::log(Tintin_reporter::DEBUG, "Matt_daemon::Unlock_file()");
 	if (flock(lockFileDescriptor, LOCK_UN) == -1)
 		Tintin_reporter::log(Tintin_reporter::ERROR, "Error unlocking file.");
 	else
@@ -103,6 +104,7 @@ void	Matt_daemon::Unlock_file()
 
 bool	Matt_daemon::Lock_file()
 {
+	Tintin_reporter::log(Tintin_reporter::DEBUG, "Matt_daemon::Lock_file()");
 	lockFileDescriptor = open(LOCK_FILE, O_CREAT, 0644);
 	if (lockFileDescriptor == -1)
 	{
@@ -125,21 +127,16 @@ bool	Matt_daemon::Lock_file()
 	return true;
 }
 
-// Matt_daemon::Start(int argc, char **argv)
-// {
-// 	Server serve(argc, argv);
-
-// 	serve.Loop();
-// }
-
-void Matt_daemon::Loop()
+void Matt_daemon::StartServer(int argc, char **argv)
 {
-	Tintin_reporter::log(Tintin_reporter::DEBUG, "Loop");
-	while(true)
-	{
-			Tintin_reporter::log(Tintin_reporter::ERROR, "BEFORLoop");
-			std::this_thread::sleep_for(std::chrono::seconds(10));
-			Tintin_reporter::log(Tintin_reporter::ERROR, "AFTERLoop");
-	}
-	Tintin_reporter::log(Tintin_reporter::DEBUG, "LoopEND");
+	Tintin_reporter::log(Tintin_reporter::DEBUG, "Start(int argc, char **argv)");
+
+	server.Start(argc, argv);
+}
+
+void Matt_daemon::LoopPoll()
+{
+	Tintin_reporter::log(Tintin_reporter::DEBUG, "Matt_daemon::Loop()");
+
+	server.Loop();
 }

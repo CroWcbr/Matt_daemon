@@ -1,17 +1,21 @@
 #pragma once
 
+#include "../include/Server.hpp"
+
 #define LOCK_FILE "./log/matt_daemon.lock"
 
 class Matt_daemon
 {
 private:
-	int	lockFileDescriptor;
+	int		lockFileDescriptor;
+	Server	server;
 
 	Matt_daemon();
 
 	bool	Lock_file(); 
 	void	Unlock_file();
 	void	Delete_lock_file();
+	void	Clear_all();
 
 public:
 	Matt_daemon(Matt_daemon const &copy) = delete;
@@ -24,7 +28,6 @@ public:
 		return instance;
 	}
 
-	void Loop();
-
-	void clear_all();
+	void	StartServer(int argc, char **argv);
+	void	LoopPoll();
 };

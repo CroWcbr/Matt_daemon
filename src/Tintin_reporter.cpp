@@ -62,7 +62,7 @@ void Tintin_reporter::makeArchive()
 	}
 	if (!status)
 		log(INFO, "File removed to archive - " + newFileName);
-	else
+	else if (errno != ENOENT)
 		log(ERROR, "Failed to Archive the file - " + oldFileName);
 }
 

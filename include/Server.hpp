@@ -5,7 +5,7 @@
 # include <poll.h>
 # include <arpa/inet.h>
 
-#define PORT				4243	// port
+#define PORT				4242	// port
 #define MAX_CLIENTS			3		// max client
 #define MAX_BUFFER_RECV		65535	// max possible read
 #define MYDEBUG				1		// for debugging server
@@ -22,19 +22,18 @@ private:
 	int									connectedClients;
 
 private:
-	bool			_ServerStart();
-	void			_PollWait();
-	void			_PollInServ(pollfdType::iterator &it);
-	void			_PollInUser(pollfdType::iterator &it);
-	void			_PollElse(pollfdType::iterator &it);
+	bool	_ServerStart();
+	void	_PollWait();
+	void	_PollInServ(pollfdType::iterator &it);
+	void	_PollInUser(pollfdType::iterator &it);
+	void	_PollElse(pollfdType::iterator &it);
 
 public:
-	Server() = delete;
+	Server();
 	Server(Server const &copy) = delete;
 	Server &operator=(Server const &copy) = delete;
-
-	Server(int argc, char **argv);
 	~Server();
 
-	void			Loop();
+	void	Start(int argc, char **argv);
+	void	Loop();
 };

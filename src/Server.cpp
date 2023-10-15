@@ -3,15 +3,20 @@
 #include <cstring>
 #include <unistd.h>
 
-Server::Server(int argc, char **argv)
+Server::Server()
 {
 	connectedClients = 0;
-	if (!_ServerStart())
-		exit(EXIT_FAILURE);
+
 }
 
 Server::~Server() 
 {
+}
+
+void Server::Start(int argc, char **argv)
+{
+	if (!_ServerStart())
+		exit(EXIT_FAILURE);
 }
 
 bool Server::_ServerStart()

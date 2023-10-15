@@ -11,9 +11,10 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	Matt_daemon&  deamon= Matt_daemon::getInstance();
+	Matt_daemon&  deamon = Matt_daemon::getInstance();
 
-	deamon.Loop();
+	deamon.StartServer(argc, argv);
+	deamon.LoopPoll();
 
 	return 0;
 }
