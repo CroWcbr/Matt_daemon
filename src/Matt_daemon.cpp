@@ -9,11 +9,12 @@
 
 void signal_handler(int signum)
 {
-	Tintin_reporter::log(Tintin_reporter::DEBUG, "signal_handler(int signum)");
+	Tintin_reporter::log(Tintin_reporter::INFO, "Signal handler.");
 
 	(void) signum;
+
 	// Matt_daemon&  deamon = Matt_daemon::getInstance();
-	// deamon.clear_all();
+	// deamon.Clear_all();
 	exit(0);
 }
 
@@ -28,7 +29,6 @@ void archiveTask()
 
 Matt_daemon::Matt_daemon()
 {
-	Tintin_reporter::log(Tintin_reporter::DEBUG, "Matt_daemon::Matt_daemon()");
 	if (!Tintin_reporter::createLogDirectory())
 		exit(1);
 	Tintin_reporter::log(Tintin_reporter::INFO, "Started.");
@@ -36,8 +36,9 @@ Matt_daemon::Matt_daemon()
 	pid_t pid = fork();
 	if (pid == -1)
 	{
-		Tintin_reporter::log(Tintin_reporter::ERROR, "fork() == -1");
-		std::cerr << "fork() == -1" << std::endl;
+		std::string messenge("Error in Daemon mode : fork() == -1");
+		Tintin_reporter::log(Tintin_reporter::ERROR, messenge);
+		std::cerr << messenge << std::endl;
 		exit(1);
 	}
 
@@ -49,16 +50,21 @@ Matt_daemon::Matt_daemon()
 		pid_t s_sid = setsid();
 		if (s_sid == -1)
 		{
-			Tintin_reporter::log(Tintin_reporter::ERROR, "setsid() == -1");
+			std::string messenge("Error in Daemon mode : setsid() == -1");
+			Tintin_reporter::log(Tintin_reporter::ERROR, messenge);
+			std::cerr << messenge << std::endl;
 			exit(1);
 		}
-
+		Tintin_reporter::log(Tintin_reporter::INFO, "Entering Daemon mode.");
+		Tintin_reporter::log(Tintin_reporter::INFO, "started. PID: " + std::to_string(s_sid) + ".");
+		
 		signal(SIGINT, signal_handler);
 		signal(SIGQUIT, signal_handler);
 		signal(SIGTERM, signal_handler);
 
-		std::thread archiveThread(archiveTask);
-		archiveThread.detach();
+		// bonus
+		// std::thread archiveThread(archiveTask);
+		// archiveThread.detach();
 
 		close(STDIN_FILENO);
 		close(STDOUT_FILENO);
@@ -72,20 +78,20 @@ Matt_daemon::Matt_daemon()
 
 Matt_daemon::~Matt_daemon()
 {
-	Clear_all();
 	Tintin_reporter::log(Tintin_reporter::DEBUG, "Matt_daemon::~Matt_daemon()");
+	Clear_all();
 }
 
 void Matt_daemon::Clear_all()
 {
-	Tintin_reporter::log(Tintin_reporter::DEBUG, "Matt_daemon::Clear_all()");
+	server.CloseAllConnection();
 	Unlock_file();
 	Delete_lock_file();
+	Tintin_reporter::log(Tintin_reporter::INFO, "Quitting.");
 }
 
 void	Matt_daemon::Delete_lock_file()
 {
-	Tintin_reporter::log(Tintin_reporter::DEBUG, "Matt_daemon::Delete_lock_file()");
 	if (unlink(LOCK_FILE) != 0)
 		Tintin_reporter::log(Tintin_reporter::ERROR, "Error deleting lock file.");
 	else
@@ -94,7 +100,6 @@ void	Matt_daemon::Delete_lock_file()
 
 void	Matt_daemon::Unlock_file()
 {
-	Tintin_reporter::log(Tintin_reporter::DEBUG, "Matt_daemon::Unlock_file()");
 	if (flock(lockFileDescriptor, LOCK_UN) == -1)
 		Tintin_reporter::log(Tintin_reporter::ERROR, "Error unlocking file.");
 	else
@@ -104,11 +109,10 @@ void	Matt_daemon::Unlock_file()
 
 bool	Matt_daemon::Lock_file()
 {
-	Tintin_reporter::log(Tintin_reporter::DEBUG, "Matt_daemon::Lock_file()");
 	lockFileDescriptor = open(LOCK_FILE, O_CREAT, 0644);
 	if (lockFileDescriptor == -1)
 	{
-		std::string messenge("Failed to open lock file.");
+		std::string messenge("Failed to creat lock file.");
 		Tintin_reporter::log(Tintin_reporter::ERROR, messenge);
 		std::cerr << messenge << std::endl;
 		return false;
@@ -129,14 +133,10 @@ bool	Matt_daemon::Lock_file()
 
 void Matt_daemon::StartServer(int argc, char **argv)
 {
-	Tintin_reporter::log(Tintin_reporter::DEBUG, "Start(int argc, char **argv)");
-
 	server.Start(argc, argv);
 }
 
 void Matt_daemon::LoopPoll()
 {
-	Tintin_reporter::log(Tintin_reporter::DEBUG, "Matt_daemon::Loop()");
-
 	server.Loop();
 }

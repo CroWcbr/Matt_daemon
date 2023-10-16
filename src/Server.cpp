@@ -1,4 +1,5 @@
 #include "../include/Server.hpp"
+#include "../include/Tintin_reporter.hpp"
 
 #include <cstring>
 #include <unistd.h>
@@ -6,24 +7,36 @@
 Server::Server()
 {
 	connectedClients = 0;
-
 }
 
 Server::~Server() 
 {
+	Tintin_reporter::log(Tintin_reporter::DEBUG, "Server::~Server() ");
+	if (connectedClients)
+		CloseAllConnection();
+}
+
+void Server::CloseAllConnection()
+{
+	for (pollfdType::iterator it = _fds.begin(); it != _fds.end();)
+	{
+		Tintin_reporter::log(Tintin_reporter::INFO, "Close connection : " + std::to_string(it->fd));
+		close(it->fd);
+		it = _fds.erase(it);
+	}
+	connectedClients = 0;
 }
 
 void Server::Start(int argc, char **argv)
 {
+	Tintin_reporter::log(Tintin_reporter::INFO, "Creating server.");
 	if (!_ServerStart())
 		exit(EXIT_FAILURE);
+	Tintin_reporter::log(Tintin_reporter::INFO, "Server created.");
 }
 
 bool Server::_ServerStart()
 {
-	if (MYDEBUG)
-		std::cout << "_ServerStart" << std::endl;
-
 	try
 	{
 		serverSocket = socket(AF_INET, SOCK_STREAM, 0);
@@ -46,16 +59,10 @@ bool Server::_ServerStart()
 		tmp.events = POLLIN;
 		tmp.revents = 0;
 		_fds.push_back(tmp);
-
-		std::cout << "\033[92m";
-		std::cout << " SERVER_START" << std::endl;
-		std::cout << "\033[0m";
 	}
 	catch (std::exception& e)
 	{
-		std::cout << "\033[91m";
-		std::cout << "ERROR SERVER START : " << e.what() << std::endl;
-		std::cout << "\033[0m";
+		Tintin_reporter::log(Tintin_reporter::ERROR, "ERROR SERVER START : " + std::string(e.what()));
 		return false;
 	}
 	return true;
@@ -63,19 +70,12 @@ bool Server::_ServerStart()
 
 void Server::Loop()
 {
-	if (MYDEBUG)
-		std::cout << "Loop" << std::endl;
-
 	while (true)
 	{
-		if (MYDEBUG)
-			std::cout << "while Loop : " << connectedClients << "\t" << _fds.size() << std::endl;
-
 		_PollWait();
 
 		for (pollfdType::iterator it = _fds.begin(); it != _fds.end();)
 		{
-			std::cout << "\t" << it->events << "\t" << it->fd << "\t" << it->revents << std::endl;
 			if (it->revents == 0)
 			{
 				++it;
@@ -99,23 +99,17 @@ void Server::Loop()
 
 void Server::_PollWait()
 {
-	if (MYDEBUG)
-		std::cout << "\033[92m" << "_PollWait" << "\033[0m" << std::endl;
-
 	int pollResult = poll(_fds.data(), _fds.size(), -1);
 
 	if (pollResult < 0)
 	{
-		std::cout << "POLL ERROR: poll = -1  " << std::endl;
+		Tintin_reporter::log(Tintin_reporter::ERROR, "POLL ERROR: poll = -1");
 		pollResult = 0;
 	}
 }
 
 void Server::_PollInServ(pollfdType::iterator &it)
 {
-	if (MYDEBUG)
-		std::cout << "_PollInServ " << std::endl;
-
 	it->revents = 0;
 	if (connectedClients < MAX_CLIENTS)
 	{
@@ -124,14 +118,14 @@ void Server::_PollInServ(pollfdType::iterator &it)
 
 		int clientSocket = accept(it->fd, reinterpret_cast<struct sockaddr*>(&clientAddr), &clientAddrLen);
 		if (clientSocket < 0)
-			std::cout << "ACCEPT ERROR: could not accept new connection" << std::endl;
+			Tintin_reporter::log(Tintin_reporter::ERROR, "ACCEPT ERROR: could not accept new connection.");
 		else
 		{
 			pollfd clientPollFd;
 			clientPollFd.fd = clientSocket;
 			clientPollFd.events = POLLIN;
 			_fds.push_back(clientPollFd);
-			std::cout << "Client connected" << std::endl;
+			Tintin_reporter::log(Tintin_reporter::INFO, "Client connected : " + std::to_string(clientSocket));
 			++connectedClients;
 		}
 	}
@@ -140,10 +134,11 @@ void Server::_PollInServ(pollfdType::iterator &it)
 		int rejectedSocket = accept(serverSocket, nullptr, nullptr);
 		if (rejectedSocket < 0)
 		{
-			std::cout << "ACCEPT ERROR: could not accept new connection" << std::endl;
+			Tintin_reporter::log(Tintin_reporter::ERROR, "ACCEPT ERROR: could not accept new connection.");
 		}
 		else
 		{
+			Tintin_reporter::log(Tintin_reporter::INFO, "Client try connected, but no available slots.");
 			send(rejectedSocket, "No available slots. Try later.\n", 31, 0);
 			close(rejectedSocket);
 		}
@@ -152,18 +147,15 @@ void Server::_PollInServ(pollfdType::iterator &it)
 
 void Server::_PollInUser(pollfdType::iterator &it)
 {
-	if (MYDEBUG == 1)	
-		std::cout << "_PollInUser" << it->fd << std::endl;
-
 	char buffer[MAX_BUFFER_RECV];
 	int bytesRead = recv(it->fd, buffer, MAX_BUFFER_RECV - 1, 0);
-	std::cout << "!!!\t" << bytesRead << std::endl;
 	if (bytesRead <= 0)
 	{
 		if (bytesRead == 0)
-			std::cout << "Client disconnected" << std::endl;
+			Tintin_reporter::log(Tintin_reporter::INFO, "Client disconnected : " + std::to_string(it->fd));
 		else
-			std::cerr << "Failed to read from client" << std::endl;
+			Tintin_reporter::log(Tintin_reporter::ERROR, "Failed to read from client : " + std::to_string(it->fd));
+		
 		close(it->fd);
 		it = _fds.erase(it);
 		connectedClients--;
@@ -174,18 +166,22 @@ void Server::_PollInUser(pollfdType::iterator &it)
 		buffer[bytesRead] = '\0';
 		std::string message(buffer);
 
-		if (message == "quit") {
-			std::cout << "Client requested to quit" << std::endl;
-			close(it->fd);
-			it = _fds.erase(it);
-			connectedClients--;
-			return;
+		if (message.back() == '\n')
+			message.pop_back();
+
+		if (message == "quit")
+		{
+			Tintin_reporter::log(Tintin_reporter::INFO, "Request quit from : " + std::to_string(it->fd));
+			CloseAllConnection();
+			exit(0);
 		}
 		else
 		{
-			message.push_back('\n');
+			Tintin_reporter::log(Tintin_reporter::LOG, "User " + std::to_string(it->fd) + " input : "+ message);
+
+			///fot test
+			message += "\n";
 			send(it->fd, message.c_str(), message.length(), 0);
-			std::cout << message << std::endl;
 		}
 	}
 	it++;
@@ -193,15 +189,16 @@ void Server::_PollInUser(pollfdType::iterator &it)
 
 void Server::_PollElse(pollfdType::iterator &it)
 {
-	if (MYDEBUG == 1)		
-		std::cout << "_PollElse" << it->fd << " : ";
+	std::string messenge = "_PollElse" + std::to_string(it->fd) + " : ";
 
 	if (it->revents & POLLNVAL)
-		std::cout << "SERVER_POLLNVAL" << std::endl;
+		messenge += "SERVER_POLLNVAL";
 	else if (it->revents & POLLHUP)
-		std::cout << "SERVER_POLLHUP" << std::endl;
+		messenge += "SERVER_POLLHUP";
 	else if (it->revents & POLLERR)
-		std::cout << "SERVER_POLLERR" << std::endl;
+		messenge += "SERVER_POLLERR";
 
+	Tintin_reporter::log(Tintin_reporter::ERROR, messenge);
+	close(it->fd);
 	it = _fds.erase(it);
 }

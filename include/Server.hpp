@@ -1,6 +1,5 @@
 #pragma once
 
-# include <iostream>
 # include <vector>
 # include <poll.h>
 # include <arpa/inet.h>
@@ -8,7 +7,7 @@
 #define PORT				4242	// port
 #define MAX_CLIENTS			3		// max client
 #define MAX_BUFFER_RECV		65535	// max possible read
-#define MYDEBUG				1		// for debugging server
+#define SERV_DEBUG			1		// for debugging server
 
 class Server
 {
@@ -36,4 +35,5 @@ public:
 
 	void	Start(int argc, char **argv);
 	void	Loop();
+	void	CloseAllConnection();
 };

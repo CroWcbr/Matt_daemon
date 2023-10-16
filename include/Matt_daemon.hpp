@@ -15,7 +15,6 @@ private:
 	bool	Lock_file(); 
 	void	Unlock_file();
 	void	Delete_lock_file();
-	void	Clear_all();
 
 public:
 	Matt_daemon(Matt_daemon const &copy) = delete;
@@ -30,4 +29,5 @@ public:
 
 	void	StartServer(int argc, char **argv);
 	void	LoopPoll();
+	void	Clear_all();
 };
