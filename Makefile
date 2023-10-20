@@ -29,14 +29,20 @@ SUCCESS		=	$(C_GOOD)SUCCESS$(C_NO)
 OK			=	$(C_OK)OK$(C_NO)
 
 all:		$(NAME)
-
+DESTDIR = ./obj
 $(NAME):	$(OBJ)
 			$(CC)  $(FLAGS) $(OBJ) -o $(NAME)
 			@echo "\tCompiling...\t" [ $(NAME) ] $(SUCCESS)
 
+bonus:		
+			qmake -o Ben_AFK/Makefile Ben_AFK.pro
+			$(MAKE) -C test
+			cp ./Ben_AFK/Ben_AFK .
+
 clean:
 			@${RM_DIR} ${OBJ_DIR}
 			@echo "\tCleaning...\t" [ $(NAME) ] $(OK)
+# add BenAFK
 
 fclean:		clean
 			@${RM_FILE} $(NAME)
@@ -44,4 +50,4 @@ fclean:		clean
 
 re:			fclean all
 
-.PHONY: all clean fclean re
+.PHONY: all clean fclean re bonus

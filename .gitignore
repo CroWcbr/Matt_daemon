@@ -1,4 +1,7 @@
-test
 log
 obj
 Matt_daemon
+
+Ben_AFK/*
+!Ben_AFK/Ben_AFK.cpp
+!Ben_AFK/Ben_AFK.pro

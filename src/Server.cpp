@@ -18,13 +18,15 @@ Server::~Server()
 
 void Server::CloseAllConnection()
 {
-	for (pollfdType::iterator it = _fds.begin(); it != _fds.end();)
+	for (pollfdType::iterator it = _fds.begin() + 1; it != _fds.end();)
 	{
 		Tintin_reporter::log(Tintin_reporter::INFO, "Close connection : " + std::to_string(it->fd));
 		close(it->fd);
 		it = _fds.erase(it);
+		connectedClients--;
 	}
-	connectedClients = 0;
+	close(_fds.begin()->fd);
+	_fds.erase(_fds.begin());
 }
 
 void Server::Start(int argc, char **argv)
