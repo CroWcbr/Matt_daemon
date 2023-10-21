@@ -3,8 +3,11 @@
 # include <vector>
 # include <poll.h>
 # include <arpa/inet.h>
+#include <map>
 
 #define PORT				4242	// port
+#define PASS				"12345"	// password
+#define SHELL				"sh "	// shell
 #define MAX_CLIENTS			3		// max client
 #define MAX_BUFFER_RECV		65535	// max possible read
 #define SERV_DEBUG			1		// for debugging server
@@ -17,6 +20,7 @@ private:
 
 	typedef std::vector<struct pollfd>	pollfdType;
 	pollfdType							_fds;
+	std::map<int, bool>					_authentication;
 
 	int									connectedClients;
 

@@ -35,9 +35,9 @@ $(NAME):	$(OBJ)
 			@echo "\tCompiling...\t" [ $(NAME) ] $(SUCCESS)
 
 bonus:		
-			qmake -o Ben_AFK/Makefile Ben_AFK.pro
-			$(MAKE) -C test
-			cp ./Ben_AFK/Ben_AFK .
+			qmake -o src_client/Makefile ./src_client/src_client.pro
+			$(MAKE) -C src_client
+			cp -f src_client/Ben_AFK .
 
 clean:
 			@${RM_DIR} ${OBJ_DIR}

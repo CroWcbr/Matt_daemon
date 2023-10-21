@@ -1,5 +1,5 @@
 TEMPLATE = app
 TARGET = Ben_AFK
 QT += widgets
-SOURCES += Ben_AFK.cpp
+SOURCES += src_client.cpp
 QT += widgets network

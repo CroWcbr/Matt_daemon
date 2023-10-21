@@ -16,7 +16,8 @@ public:
     }
 
     ~DaemonClient() {
-        // Освободите ресурсы, если необходимо.
+        clientSocket->disconnectFromHost(); // Отключаемся от сервера перед удалением
+        delete clientSocket; // Удаляем объект clientSocket
     }
 private slots:
     void sendCommand() {
@@ -62,27 +63,17 @@ private:
         serverAddress = QHostAddress("127.0.0.1");
         serverPort = 4242;
 
-        QTcpSocket tempSocket;
-        tempSocket.connectToHost(serverAddress, serverPort);
+        clientSocket = new QTcpSocket(this);
+        clientSocket->connectToHost(serverAddress, serverPort);
 
-        if (tempSocket.waitForConnected(5000))
-        {
-            clientSocket = new QTcpSocket(this);
-            clientSocket->connectToHost(serverAddress, serverPort);
-
-            connect(clientSocket, &QTcpSocket::readyRead, this, &DaemonClient::receiveMessage);
-            connect(clientSocket, &QTcpSocket::disconnected, this, &DaemonClient::handleDisconnected);
-        }
-        else
-        {
-            messageDisplay->append("There is no server localhost:4242.");
-            sendButton->setEnabled(false);
-        }
+        connect(clientSocket, &QTcpSocket::readyRead, this, &DaemonClient::receiveMessage);
+        connect(clientSocket, &QTcpSocket::disconnected, this, &DaemonClient::handleDisconnected);
     }
 
     void handleDisconnected() {
         messageDisplay->append("Server disconnected.");
         qDebug() << "Server disconnected.";
+        clientSocket->disconnectFromHost();
         sendButton->setEnabled(false);
         // Выполните необходимые действия при отключении сервера.
     }
@@ -102,4 +93,4 @@ int main(int argc, char* argv[]) {
     return app.exec();
 }
 
-#include "Ben_AFK.moc"
+#include "src_client.moc"

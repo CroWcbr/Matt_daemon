@@ -18,13 +18,18 @@ Server::~Server()
 
 void Server::CloseAllConnection()
 {
-	for (pollfdType::iterator it = _fds.begin() + 1; it != _fds.end();)
+	if (_fds.empty())
+		return;
+	for (pollfdType::iterator it = _fds.begin() + 1; connectedClients && it != _fds.end();)
 	{
-		Tintin_reporter::log(Tintin_reporter::INFO, "Close connection : " + std::to_string(it->fd));
+		Tintin_reporter::log(Tintin_reporter::INFO, "Close connection fd : " + std::to_string(it->fd));
 		close(it->fd);
+		_authentication.erase(it->fd);
 		it = _fds.erase(it);
 		connectedClients--;
+		Tintin_reporter::log(Tintin_reporter::INFO, std::to_string(connectedClients));
 	}
+	Tintin_reporter::log(Tintin_reporter::INFO, "Close server fd : " + std::to_string(_fds.begin()->fd));
 	close(_fds.begin()->fd);
 	_fds.erase(_fds.begin());
 }
@@ -49,6 +54,10 @@ bool Server::_ServerStart()
 		serverAddr.sin_family = AF_INET;
 		serverAddr.sin_addr.s_addr = htonl(INADDR_ANY);
 		serverAddr.sin_port = htons(PORT);
+
+		int reuse = 1;
+		if (setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) < 0)
+			throw std::runtime_error("Failed to bind socket");
 
 		if (bind(serverSocket, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0)
 			throw std::runtime_error("Failed to bind socket");
@@ -83,7 +92,7 @@ void Server::Loop()
 				++it;
 				continue;
 			}
-
+Tintin_reporter::log(Tintin_reporter::DEBUG, "Loop: " + std::to_string(it->fd));
 			if (it->revents & POLLIN && it->fd == serverSocket)
 			{
 				_PollInServ(it);
@@ -127,7 +136,9 @@ void Server::_PollInServ(pollfdType::iterator &it)
 			clientPollFd.fd = clientSocket;
 			clientPollFd.events = POLLIN;
 			_fds.push_back(clientPollFd);
-			Tintin_reporter::log(Tintin_reporter::INFO, "Client connected : " + std::to_string(clientSocket));
+			_authentication[clientSocket] = false;
+			send(clientSocket, "Input password!\n", 16, 0);
+			Tintin_reporter::log(Tintin_reporter::INFO, "Client connected and wait authentication : " + std::to_string(clientSocket));
 			++connectedClients;
 		}
 	}
@@ -160,6 +171,7 @@ void Server::_PollInUser(pollfdType::iterator &it)
 		
 		close(it->fd);
 		it = _fds.erase(it);
+		_authentication.erase(it->fd);
 		connectedClients--;
 		return;
 	}
@@ -171,11 +183,39 @@ void Server::_PollInUser(pollfdType::iterator &it)
 		if (message.back() == '\n')
 			message.pop_back();
 
-		if (message == "quit")
+		if (_authentication[it->fd] == false)
+		{
+			std::string send_mes;
+			if (message == PASS)
+			{
+				send_mes = "Authentication OK!";
+				Tintin_reporter::log(Tintin_reporter::INFO, send_mes + " : " + std::to_string(it->fd));
+				send_mes += "\n";
+				send(it->fd, send_mes.c_str(), send_mes.length(), 0);
+				_authentication[it->fd] = true;
+			}
+			else
+			{
+				send_mes = "Wrong password. Disconect.\n";
+				Tintin_reporter::log(Tintin_reporter::INFO, send_mes + " : " + std::to_string(it->fd));
+				send_mes += "\n";
+				send(it->fd, send_mes.c_str(), send_mes.length(), 0);
+				close(it->fd);
+				it = _fds.erase(it);
+				_authentication.erase(it->fd);
+				connectedClients--;
+				return;
+			}
+		}
+		else if (message == "quit")
 		{
 			Tintin_reporter::log(Tintin_reporter::INFO, "Request quit from : " + std::to_string(it->fd));
 			CloseAllConnection();
 			exit(0);
+		}
+		else if (message.substr(0, 3) == SHELL)
+		{
+			send(it->fd, "shell command\n", 14, 0);
 		}
 		else
 		{
@@ -191,7 +231,7 @@ void Server::_PollInUser(pollfdType::iterator &it)
 
 void Server::_PollElse(pollfdType::iterator &it)
 {
-	std::string messenge = "_PollElse" + std::to_string(it->fd) + " : ";
+	std::string messenge = "_PollElse " + std::to_string(it->fd) + " : ";
 
 	if (it->revents & POLLNVAL)
 		messenge += "SERVER_POLLNVAL";
@@ -203,4 +243,5 @@ void Server::_PollElse(pollfdType::iterator &it)
 	Tintin_reporter::log(Tintin_reporter::ERROR, messenge);
 	close(it->fd);
 	it = _fds.erase(it);
+	_authentication.erase(it->fd);
 }

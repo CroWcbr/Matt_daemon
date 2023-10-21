@@ -3,6 +3,8 @@
 #include <iostream>
 #include <unistd.h>
 
+#include "../include/Tintin_reporter.hpp"
+
 int main(int argc, char **argv)
 {
 	if (getuid() != 0)

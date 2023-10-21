@@ -17,12 +17,12 @@ code a daemon
 - When the daemon receives a signal, it must intercept it and register it in the matt_daemon.log file with an explicit message and quit properly.
 
 ## Bonus done
+- Create a graphic client to interact with the daemon.
 - Advanced log archival.
+- Create an authentication system to connect to the daemon (through a graphic client/remote shell).
+- Add useful functions to your daemon (creation of a remote shell for instance!).
 
 ## Bonus (i think about it)
-- Create a graphic client to interact with the daemon.
-- Add useful functions to your daemon (creation of a remote shell for instance!).
-- Create an authentication system to connect to the daemon (through a graphic client/remote shell).
 - Cypher sending and reception of the data (logically requires a client).
 - Mail sending according to specific filters.
 - Using advanced encryption systems (key public/private).
