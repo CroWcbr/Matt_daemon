@@ -42,7 +42,7 @@ bonus:
 clean:
 			@${RM_DIR} ${OBJ_DIR}
 			@echo "\tCleaning...\t" [ $(NAME) ] $(OK)
-# add BenAFK
+# add BenAFK clear
 
 fclean:		clean
 			@${RM_FILE} $(NAME)
