@@ -18,7 +18,6 @@ class Tintin_reporter
 private:
 	static std::mutex	_mutex;
 
-
 	static std::string	_getCurrentDateTime();
 	static std::string	_getCurrentDateTimeArchive();
 

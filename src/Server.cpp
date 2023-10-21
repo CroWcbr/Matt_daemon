@@ -22,19 +22,18 @@ void Server::CloseAllConnection()
 		return;
 	for (pollfdType::iterator it = _fds.begin() + 1; connectedClients && it != _fds.end();)
 	{
-		Tintin_reporter::log(Tintin_reporter::INFO, "Close connection fd : " + std::to_string(it->fd));
+		Tintin_reporter::log(Tintin_reporter::DEBUG, "Close connection fd : " + std::to_string(it->fd));
 		close(it->fd);
 		_authentication.erase(it->fd);
 		it = _fds.erase(it);
 		connectedClients--;
-		Tintin_reporter::log(Tintin_reporter::INFO, std::to_string(connectedClients));
 	}
-	Tintin_reporter::log(Tintin_reporter::INFO, "Close server fd : " + std::to_string(_fds.begin()->fd));
+	Tintin_reporter::log(Tintin_reporter::DEBUG, "Close server fd : " + std::to_string(_fds.begin()->fd));
 	close(_fds.begin()->fd);
 	_fds.erase(_fds.begin());
 }
 
-void Server::Start(int argc, char **argv)
+void Server::Start()
 {
 	Tintin_reporter::log(Tintin_reporter::INFO, "Creating server.");
 	if (!_ServerStart())
@@ -92,7 +91,7 @@ void Server::Loop()
 				++it;
 				continue;
 			}
-Tintin_reporter::log(Tintin_reporter::DEBUG, "Loop: " + std::to_string(it->fd));
+
 			if (it->revents & POLLIN && it->fd == serverSocket)
 			{
 				_PollInServ(it);
@@ -183,7 +182,7 @@ void Server::_PollInUser(pollfdType::iterator &it)
 		if (message.back() == '\n')
 			message.pop_back();
 
-		if (_authentication[it->fd] == false)
+		if (_authentication[it->fd] == false) // bonus
 		{
 			std::string send_mes;
 			if (message == PASS)
@@ -213,17 +212,36 @@ void Server::_PollInUser(pollfdType::iterator &it)
 			CloseAllConnection();
 			exit(0);
 		}
-		else if (message.substr(0, 3) == SHELL)
+		else if (message.substr(0, 3) == SHELL) // bonus
 		{
-			send(it->fd, "shell command\n", 14, 0);
+			std::string sh_command = message.substr(3);
+			std::string result;
+
+			Tintin_reporter::log(Tintin_reporter::INFO, "Shell command : " + sh_command + " from : " + std::to_string(it->fd));
+			FILE* cmdStream = popen(sh_command.c_str(), "r");
+			if (cmdStream)
+			{
+				char cmdOutput[128];
+				while (fgets(cmdOutput, sizeof(cmdOutput), cmdStream) != nullptr)
+					result.append(cmdOutput);
+				pclose(cmdStream);
+
+			}
+			else
+				result = "Error in shell command";
+
+			if (result.empty())
+				result = "Command done!";
+			Tintin_reporter::log(Tintin_reporter::INFO, "result Shell command : \n" + result);
+			send(it->fd, result.c_str(), result.length(), 0);
 		}
 		else
 		{
 			Tintin_reporter::log(Tintin_reporter::LOG, "User " + std::to_string(it->fd) + " input : "+ message);
 
 			///fot test
-			message += "\n";
-			send(it->fd, message.c_str(), message.length(), 0);
+			// message += "\n";
+			// send(it->fd, message.c_str(), message.length(), 0);
 		}
 	}
 	it++;

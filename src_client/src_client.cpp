@@ -6,44 +6,47 @@
 #include <QHostAddress>
 #include <QTextEdit>
 
-class DaemonClient : public QMainWindow {
+#define LOCALHOST   "127.0.0.1"
+#define PORT        4242
+
+class DaemonClient : public QMainWindow
+{
     Q_OBJECT
 
 public:
-    DaemonClient() {
+    DaemonClient()
+    {
         initUI();
         createConnection();
     }
 
-    ~DaemonClient() {
-        clientSocket->disconnectFromHost(); // Отключаемся от сервера перед удалением
-        delete clientSocket; // Удаляем объект clientSocket
+    ~DaemonClient()
+    {
+        clientSocket->disconnectFromHost();
+        delete clientSocket;
     }
+
 private slots:
-    void sendCommand() {
+    void sendCommand()
+    {
         QString command = inputText->text();
         clientSocket->write(command.toUtf8());
         inputText->clear();
     }
 
-    void receiveMessage() {
+    void receiveMessage()
+    {
         QString message = clientSocket->readAll();
-        // if (message == "quit") {
-        //     clientSocket->close();
-        //     QCoreApplication::quit();
-        // }
-        // else 
-        // {
-            messageDisplay->append(message);
-        // }
+        messageDisplay->append(message);
     }
 
 private:
-    DaemonClient(const DaemonClient&) = delete;  // Запрещаем конструктор копирования
-    DaemonClient& operator=(const DaemonClient&) = delete;  // Запрещаем оператор присвоения
+    DaemonClient(const DaemonClient&) = delete;
+    DaemonClient& operator=(const DaemonClient&) = delete;
 
-    void initUI() {
-        setGeometry(100, 100, 400, 300); // Увеличьте высоту окна.
+    void initUI()
+    {
+        setGeometry(100, 100, 400, 300);
         setWindowTitle("Daemon Client");
 
         inputText = new QLineEdit(this);
@@ -53,15 +56,15 @@ private:
         sendButton->setGeometry(290, 20, 80, 30);
         connect(sendButton, &QPushButton::clicked, this, &DaemonClient::sendCommand);
 
-        // Добавьте QTextEdit для отображения сообщений.
         messageDisplay = new QTextEdit(this);
         messageDisplay->setGeometry(20, 70, 350, 180);
-        messageDisplay->setReadOnly(true); // Чтобы пользователь не мог редактировать текст.
+        messageDisplay->setReadOnly(true);
     }
 
-    void createConnection() {
-        serverAddress = QHostAddress("127.0.0.1");
-        serverPort = 4242;
+    void createConnection()
+    {
+        serverAddress = QHostAddress(LOCALHOST);
+        serverPort = PORT;
 
         clientSocket = new QTcpSocket(this);
         clientSocket->connectToHost(serverAddress, serverPort);
@@ -70,12 +73,12 @@ private:
         connect(clientSocket, &QTcpSocket::disconnected, this, &DaemonClient::handleDisconnected);
     }
 
-    void handleDisconnected() {
+    void handleDisconnected()
+    {
         messageDisplay->append("Server disconnected.");
         qDebug() << "Server disconnected.";
         clientSocket->disconnectFromHost();
         sendButton->setEnabled(false);
-        // Выполните необходимые действия при отключении сервера.
     }
 
     QLineEdit*      inputText;
@@ -86,7 +89,8 @@ private:
     quint16         serverPort;
 };
 
-int main(int argc, char* argv[]) {
+int main(int argc, char* argv[])
+{
     QApplication app(argc, argv);
     DaemonClient client;
     client.show();

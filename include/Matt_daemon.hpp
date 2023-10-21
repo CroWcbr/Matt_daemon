@@ -27,7 +27,7 @@ public:
 		return instance;
 	}
 
-	void	StartServer(int argc, char **argv);
+	void	StartServer();
 	void	LoopPoll();
 	void	Clear_all();
 };

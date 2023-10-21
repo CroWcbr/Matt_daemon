@@ -37,7 +37,7 @@ public:
 	Server &operator=(Server const &copy) = delete;
 	~Server();
 
-	void	Start(int argc, char **argv);
+	void	Start();
 	void	Loop();
 	void	CloseAllConnection();
 };

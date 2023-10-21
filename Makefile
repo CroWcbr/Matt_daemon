@@ -1,7 +1,7 @@
 NAME		=	Matt_daemon
 
 CC			=	g++
-FLAGS		=	#-Wall -Wextra -Werror
+FLAGS		=	-Wall -Wextra -Werror
 
 OBJ_DIR		=	obj
 
@@ -31,22 +31,31 @@ OK			=	$(C_OK)OK$(C_NO)
 all:		$(NAME)
 DESTDIR = ./obj
 $(NAME):	$(OBJ)
-			$(CC)  $(FLAGS) $(OBJ) -o $(NAME)
+			$(CC) $(FLAGS) $(OBJ) -o $(NAME)
 			@echo "\tCompiling...\t" [ $(NAME) ] $(SUCCESS)
 
-bonus:		
+client:		
 			qmake -o src_client/Makefile ./src_client/src_client.pro
 			$(MAKE) -C src_client
 			cp -f src_client/Ben_AFK .
+			@echo "\tCompiling...\t" [ "Ben_AFK" ] $(SUCCESS)
 
 clean:
 			@${RM_DIR} ${OBJ_DIR}
 			@echo "\tCleaning...\t" [ $(NAME) ] $(OK)
-# add BenAFK clear
+			@if [ -f src_client/Makefile ]; then \
+				$(MAKE) -C src_client clean; \
+			fi
+			@echo "\tCleaning...\t" [ "client" ] $(OK)
 
 fclean:		clean
 			@${RM_FILE} $(NAME)
 			@echo "\tDeleting...\t" [ $(NAME) ] $(OK)
+			@rm -f src_client/Makefile
+			@rm -f src_client/Ben_AFK
+			@rm -f src_client/.qmake.stash
+			@rm -f Ben_AFK
+			@echo "\tDeleting...\t" [ "client" ] $(OK)
 
 re:			fclean all
 

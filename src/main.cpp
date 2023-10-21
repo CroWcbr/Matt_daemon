@@ -5,7 +5,7 @@
 
 #include "../include/Tintin_reporter.hpp"
 
-int main(int argc, char **argv)
+int main()
 {
 	if (getuid() != 0)
 	{
@@ -15,7 +15,7 @@ int main(int argc, char **argv)
 
 	Matt_daemon&  deamon = Matt_daemon::getInstance();
 
-	deamon.StartServer(argc, argv);
+	deamon.StartServer();
 	deamon.LoopPoll();
 
 	return 0;

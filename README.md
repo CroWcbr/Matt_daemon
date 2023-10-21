@@ -1,12 +1,15 @@
 # Matt_daemon
 code a daemon
 
+## Features
+- client use Qt library C++
+
 ## Mandatory
 - The program will have to run only with the root rights.
 - Your program will have to run in the background, just like a real daemon.
 - The daemon will have to listen to the port 4242.
 - For your daemon’s log, you will have to create a class called Tintin_reporter.
-- Every daemon action should show in a log file matt_daemon.log with timestamp (in this form [ DD / MM / YYYY - HH : MM : SS]) located in the folder /var/log/-matt_daemon/.
+- Every daemon action should show in a log file matt_daemon.log with timestamp (in this form [DD/MM/YYYY-HH:MM :SS]) located in the folder /var/log/-matt_daemon/.
 - Only one daemon instance should be able to run at once.
 - When attempting to run a second daemon whereas one instance is already running, an error message indicating a creation/file opening on matt_daemon.lock attempt must pop.
 - A matt_daemon.lock file must be created in /var/lock/ when the daemon starts.
@@ -21,8 +24,3 @@ code a daemon
 - Advanced log archival.
 - Create an authentication system to connect to the daemon (through a graphic client/remote shell).
 - Add useful functions to your daemon (creation of a remote shell for instance!).
-
-## Bonus (i think about it)
-- Cypher sending and reception of the data (logically requires a client).
-- Mail sending according to specific filters.
-- Using advanced encryption systems (key public/private).

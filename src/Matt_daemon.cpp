@@ -1,7 +1,6 @@
 #include "../include/Tintin_reporter.hpp"
 #include "../include/Matt_daemon.hpp"
 
-
 #include <unistd.h>
 #include <signal.h>
 #include <thread>
@@ -18,7 +17,7 @@ void signal_handler(int signum)
 	exit(0);
 }
 
-void archiveTask()
+void archiveTask() // bonus
 {
 	while (true)
 	{
@@ -63,8 +62,8 @@ Matt_daemon::Matt_daemon()
 		signal(SIGTERM, signal_handler);
 
 		// bonus
-		// std::thread archiveThread(archiveTask);
-		// archiveThread.detach();
+		std::thread archiveThread(archiveTask);
+		archiveThread.detach();
 
 		close(STDIN_FILENO);
 		close(STDOUT_FILENO);
@@ -131,9 +130,9 @@ bool	Matt_daemon::Lock_file()
 	return true;
 }
 
-void Matt_daemon::StartServer(int argc, char **argv)
+void Matt_daemon::StartServer()
 {
-	server.Start(argc, argv);
+	server.Start();
 }
 
 void Matt_daemon::LoopPoll()
