@@ -3,7 +3,8 @@
 # include <vector>
 # include <poll.h>
 # include <arpa/inet.h>
-#include <map>
+# include <map>
+# include <string>
 
 #define PORT				4242	// port
 #define PASS				"12345"	// password
@@ -30,6 +31,7 @@ private:
 	void	_PollInServ(pollfdType::iterator &it);
 	void	_PollInUser(pollfdType::iterator &it);
 	void	_PollElse(pollfdType::iterator &it);
+	void	_ShellCommand(std::string& sh_command, int fd);
 
 public:
 	Server();

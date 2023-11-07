@@ -3,6 +3,8 @@
 
 #include <cstring>
 #include <unistd.h>
+#include <sys/wait.h>
+#include <chrono>
 
 Server::Server()
 {
@@ -167,10 +169,10 @@ void Server::_PollInUser(pollfdType::iterator &it)
 			Tintin_reporter::log(Tintin_reporter::INFO, "Client disconnected : " + std::to_string(it->fd));
 		else
 			Tintin_reporter::log(Tintin_reporter::ERROR, "Failed to read from client : " + std::to_string(it->fd));
-		
+
+		_authentication.erase(it->fd);
 		close(it->fd);
 		it = _fds.erase(it);
-		_authentication.erase(it->fd);
 		connectedClients--;
 		return;
 	}
@@ -195,13 +197,13 @@ void Server::_PollInUser(pollfdType::iterator &it)
 			}
 			else
 			{
-				send_mes = "Wrong password. Disconect.\n";
+				send_mes = "Wrong password. Disconect.";
 				Tintin_reporter::log(Tintin_reporter::INFO, send_mes + " : " + std::to_string(it->fd));
 				send_mes += "\n";
 				send(it->fd, send_mes.c_str(), send_mes.length(), 0);
 				close(it->fd);
-				it = _fds.erase(it);
 				_authentication.erase(it->fd);
+				it = _fds.erase(it);
 				connectedClients--;
 				return;
 			}
@@ -215,25 +217,35 @@ void Server::_PollInUser(pollfdType::iterator &it)
 		else if (message.substr(0, 3) == SHELL) // bonus
 		{
 			std::string sh_command = message.substr(3);
-			std::string result;
+			_ShellCommand(sh_command, it->fd);
 
-			Tintin_reporter::log(Tintin_reporter::INFO, "Shell command : " + sh_command + " from : " + std::to_string(it->fd));
-			FILE* cmdStream = popen(sh_command.c_str(), "r");
-			if (cmdStream)
-			{
-				char cmdOutput[128];
-				while (fgets(cmdOutput, sizeof(cmdOutput), cmdStream) != nullptr)
-					result.append(cmdOutput);
-				pclose(cmdStream);
+			// std::string result;
 
-			}
-			else
-				result = "Error in shell command";
+			// int original_stdout_fd = dup(fileno(stdout));
+			// int original_stderr_fd = dup(fileno(stderr));
+			// dup2(it->fd, fileno(stdout));
+			// dup2(it->fd, fileno(stderr));
 
-			if (result.empty())
-				result = "Command done!";
-			Tintin_reporter::log(Tintin_reporter::INFO, "result Shell command : \n" + result);
-			send(it->fd, result.c_str(), result.length(), 0);
+			// Tintin_reporter::log(Tintin_reporter::INFO, "Shell command : " + sh_command + " from : " + std::to_string(it->fd));
+			// FILE* cmdStream = popen(sh_command.c_str(), "r");
+			// if (cmdStream)
+			// {
+			// 	char cmdOutput[128];
+			// 	while (fgets(cmdOutput, sizeof(cmdOutput), cmdStream) != nullptr)
+			// 		result.append(cmdOutput);
+			// 	pclose(cmdStream);
+			// }
+			// else
+			// 	result = "Error in shell command";
+
+			// if (result.empty())
+			// 	result = "Command done! " + std::to_string(it->fd);
+			// Tintin_reporter::log(Tintin_reporter::INFO, "result Shell command from :" + std::to_string(it->fd) + " : \n" + result);
+			// result.append("\n");
+			// send(it->fd, result.c_str(), result.length(), 0);
+
+			// dup2(original_stdout_fd, fileno(stdout));
+			// dup2(original_stderr_fd, fileno(stderr));
 		}
 		else
 		{
@@ -259,7 +271,87 @@ void Server::_PollElse(pollfdType::iterator &it)
 		messenge += "SERVER_POLLERR";
 
 	Tintin_reporter::log(Tintin_reporter::ERROR, messenge);
+	_authentication.erase(it->fd);
 	close(it->fd);
 	it = _fds.erase(it);
-	_authentication.erase(it->fd);
+}
+
+void Server::_ShellCommand(std::string& sh_command, int fd)
+{
+	Tintin_reporter::log(Tintin_reporter::INFO, "Shell command : " + sh_command + " from : " + std::to_string(fd));
+	std::string result;
+
+	int pipefd[2];
+	if (pipe(pipefd) == -1)
+	{
+		result = "Error creating pipe";
+
+	}
+	else
+	{
+		pid_t child_pid = fork();
+		if (child_pid == 0)
+		{
+			close(pipefd[0]);
+			dup2(pipefd[1], fileno(stdout));
+			dup2(pipefd[1], fileno(stderr));
+			close(pipefd[1]);
+			execl("/bin/sh", "/bin/sh", "-c", sh_command.c_str(), (char *)NULL);
+			const char *error_message = strerror(errno);
+			write(fileno(stderr), error_message, std::strlen(error_message));
+			exit(1);
+		}
+		else if (child_pid > 0)
+		{
+			close(pipefd[1]);
+			int child_process_status;
+
+			auto end_time = std::chrono::high_resolution_clock::now() + std::chrono::seconds(1);
+			while (1)
+			{
+				int waitpid_status = waitpid(child_pid, &child_process_status, WNOHANG);
+				if(waitpid_status == -1)
+				{
+					result = "Error in waitpid";
+					kill(child_pid, SIGTERM);
+					break;
+				}
+				else if (waitpid_status)
+				{
+					waitpid(child_pid, &child_process_status, 0);
+
+					char cmdOutput[128];
+					int bytesRead = 0;
+					while (1)
+					{
+						int n = read(pipefd[0], cmdOutput, sizeof(cmdOutput));
+						if (n < 0)
+						{
+							result = "Error reading from pipe";
+							break;
+						}
+						else if (n == 0)
+							break;
+						else
+							result.append(cmdOutput, n);
+						bytesRead += n;
+					}
+					break;
+				}
+				else if(std::chrono::high_resolution_clock::now() > end_time)
+				{
+					kill(child_pid, SIGTERM);
+					result = "Shell timeout";
+					break;
+				}
+			}
+			close(pipefd[0]);
+		}
+		else
+			result = "Error creating child process";
+	}
+
+	Tintin_reporter::log(Tintin_reporter::INFO, "result Shell command from: " + std::to_string(fd) + " : \n" + result);
+	result.append("\n");
+	send(fd, result.c_str(), result.length(), 0);
 }

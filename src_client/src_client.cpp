@@ -76,7 +76,7 @@ private:
     void handleDisconnected()
     {
         messageDisplay->append("Server disconnected.");
-        qDebug() << "Server disconnected.";
+        // qDebug() << "Server disconnected.";
         clientSocket->disconnectFromHost();
         sendButton->setEnabled(false);
     }

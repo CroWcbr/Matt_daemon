@@ -62,8 +62,8 @@ Matt_daemon::Matt_daemon()
 		signal(SIGTERM, signal_handler);
 
 		// bonus
-		std::thread archiveThread(archiveTask);
-		archiveThread.detach();
+		// std::thread archiveThread(archiveTask);
+		// archiveThread.detach();
 
 		close(STDIN_FILENO);
 		close(STDOUT_FILENO);
