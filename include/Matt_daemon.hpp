@@ -2,7 +2,8 @@
 
 #include "../include/Server.hpp"
 
-#define LOCK_FILE "./log/matt_daemon.lock"
+// #define LOCK_FILE "./log/matt_daemon.lock"
+#define LOCK_FILE "/var/lock/matt_daemon.lock"
 
 class Matt_daemon
 {

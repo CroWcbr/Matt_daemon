@@ -9,7 +9,8 @@
 #include <sstream>
 #include <mutex>
 
-#define LOG_DIRECTORY	"./log"
+// #define LOG_DIRECTORY	"./log"
+#define LOG_DIRECTORY	"/var/log/matt_daemon/"
 #define LOG_FILENAME	"matt_daemon.log"
 #define DEBUG_LOG		1
 
