@@ -29,7 +29,7 @@ SUCCESS		=	$(C_GOOD)SUCCESS$(C_NO)
 OK			=	$(C_OK)OK$(C_NO)
 
 all:		$(NAME)
-DESTDIR = ./obj
+
 $(NAME):	$(OBJ)
 			$(CC) $(FLAGS) $(OBJ) -o $(NAME)
 			@echo "\tCompiling...\t" [ $(NAME) ] $(SUCCESS)
